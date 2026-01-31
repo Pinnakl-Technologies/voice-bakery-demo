@@ -1,12 +1,9 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js --dev",
-    "start": "node server.js",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build --outDir dist/client --ssrManifest",
-    "build:server": "vite build --outDir dist/server --ssr /index.js",
-    "devinstall": "zx ../../devinstall.mjs -- node server.js --dev",
+    "dev": "vite",
+    "build": "npx vite build --outDir dist/client",
+    "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx --fix"
   },
   "dependencies": {
@@ -17,9 +14,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-feather": "^2.0.10",
-    "react-router-dom": "^6.20.0"
-  },
-  "devDependencies": {
+    "react-router-dom": "^6.20.0",
     "@vitejs/plugin-react": "^4.3.4",
     "nodemon": "^3.1.10",
     "postcss": "^8.4.31",

@@ -101,6 +101,7 @@ export default function ToolPanel({
   isSessionActive,
   sendClientEvent,
   events,
+  stopSession,
 }) {
   const [orderSummary, setOrderSummary] = useState(null);
   const [orderConfirmation, setOrderConfirmation] = useState(null);
@@ -120,12 +121,8 @@ export default function ToolPanel({
         console.log("AI response completed, ending session now...");
         setShouldEndSession(false); // Reset flag
 
-        // Find the App component's stopSession function via props
-        // We'll need to pass it down from App
-        const stopButton = document.querySelector('button[class*="bg-red"]');
-        if (stopButton && stopButton.textContent.includes('End Session')) {
-          stopButton.click();
-        }
+        // Call the stopSession function passed from App
+        stopSession();
         return;
       }
 

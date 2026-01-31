@@ -170,6 +170,7 @@ export default function App() {
             sendClientEvent={sendClientEvent}
             events={events}
             isSessionActive={isSessionActive}
+            stopSession={stopSession}
           />
         </section>
       </main>

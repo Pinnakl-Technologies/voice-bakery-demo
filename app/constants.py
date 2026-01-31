@@ -144,5 +144,22 @@ TOOLS = [
         "type": "function",
         "name": "end_call",
         "description": "Call this tool when the user wants to end the conversation or says goodbye (e.g., Allah Hafiz, bye, thank you and goodbye). This will gracefully end the session after you give a final goodbye message.",
+        "parameters": {
+            "type": "object",
+            "strict": True,
+            "properties": {},
+            "required": [],
+        }
+    },
+    {
+        "type": "function",
+        "name": "clear_order",
+        "description": "Call this tool if the user wants to cancel their current order, remove all items, or start over. This will flush all pending items from the order summary.",
+        "parameters": {
+            "type": "object",
+            "strict": True,
+            "properties": {},
+            "required": [],
+        }
     },
 ]

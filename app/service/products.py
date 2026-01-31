@@ -41,6 +41,16 @@ def end_call():
         "action": "end_session"
     }
 
+def clear_order():
+    """
+    Clear all items from the current pending order.
+    """
+    return {
+        "status": "success",
+        "message": "Your order has been cleared. You can start a new order now.",
+        "instruction": "Inform the user that their order has been cleared and ask what they would like to order instead."
+    }
+
 def make_order(items: list[dict]):
     """
     Calculate the total cost for the order and provide a summary.

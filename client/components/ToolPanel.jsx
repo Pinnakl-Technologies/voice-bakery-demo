@@ -296,6 +296,47 @@ export default function ToolPanel({
                 console.error("Error executing end_call:", error);
               }
             }
+            // Handle clear_order - reset order state
+            else if (output.name === "clear_order") {
+              console.log("Clear order function detected:", output);
+
+              try {
+                // Call backend to execute the tool
+                const response = await fetch("/execute-tool", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    id: output.id,
+                    name: output.name,
+                    call_id: output.call_id,
+                    arguments: {},
+                  }),
+                });
+
+                const data = await response.json();
+                console.log("Clear order response:", data);
+
+                // Reset frontend state
+                handleClearOrder();
+
+                // Send the function output back to the model
+                sendClientEvent({
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: output.call_id,
+                    output: JSON.stringify(data),
+                  },
+                });
+
+                // Trigger response from the model
+                sendClientEvent({ type: "response.create" });
+              } catch (error) {
+                console.error("Error executing clear_order:", error);
+              }
+            }
             // Handle all other tools
             else {
               try {

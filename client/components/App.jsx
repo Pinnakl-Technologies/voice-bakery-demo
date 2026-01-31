@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import logo from "/assets/openai-logomark.svg";
-import EventLog from "./EventLog";
+import customLogo from "/assets/logo.png";
 import SessionControls from "./SessionControls";
 import ToolPanel from "./ToolPanel";
 
@@ -100,26 +99,6 @@ export default function App() {
     }
   }
 
-  // Send a text message to the model
-  function sendTextMessage(message) {
-    const event = {
-      type: "conversation.item.create",
-      item: {
-        type: "message",
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: message,
-          },
-        ],
-      },
-    };
-
-    sendClientEvent(event);
-    sendClientEvent({ type: "response.create" });
-  }
-
   // Attach event listeners to the data channel when a new one is created
   useEffect(() => {
     if (dataChannel) {
@@ -137,38 +116,58 @@ export default function App() {
       dataChannel.addEventListener("open", () => {
         setIsSessionActive(true);
         setEvents([]);
+
+        // Send initial greeting from the agent
+        setTimeout(() => {
+          sendClientEvent({
+            type: "conversation.item.create",
+            item: {
+              type: "message",
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: "Call Started"
+                }
+              ]
+            }
+          });
+
+          // Trigger response from the model
+          sendClientEvent({ type: "response.create" });
+        }, 500); // Small delay to ensure the session is fully ready
       });
     }
   }, [dataChannel]);
 
   return (
     <>
-      <nav className="absolute top-0 left-0 right-0 h-16 flex items-center">
-        <div className="flex items-center gap-4 w-full m-4 pb-2 border-0 border-b border-solid border-gray-200">
-          <img style={{ width: "24px" }} src={logo} />
-          <h1>realtime console</h1>
+      {/* Header with Logo */}
+      <nav className="absolute top-0 left-0 right-0 h-20 flex items-center justify-center bg-gradient-to-r from-green-50 to-blue-50 border-b border-gray-200">
+        <div className="flex items-center gap-4">
+          <img src={customLogo} alt="Rehmat-e-Shereen" className="h-16 w-16 object-contain" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Rehmat-e-Shereen</h1>
+            <p className="text-sm text-gray-600">Voice Bakery Ordering System</p>
+          </div>
         </div>
       </nav>
-      <main className="absolute top-16 left-0 right-0 bottom-0">
-        <section className="absolute top-0 left-0 right-[380px] bottom-0 flex">
-          <section className="absolute top-0 left-0 right-0 bottom-32 px-4 overflow-y-auto">
-            <EventLog events={events} />
-          </section>
-          <section className="absolute h-32 left-0 right-0 bottom-0 p-4">
-            <SessionControls
-              startSession={startSession}
-              stopSession={stopSession}
-              sendClientEvent={sendClientEvent}
-              sendTextMessage={sendTextMessage}
-              events={events}
-              isSessionActive={isSessionActive}
-            />
-          </section>
+
+      <main className="absolute top-20 left-0 right-0 bottom-0 bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Main Content Area */}
+        <section className="absolute top-0 left-0 right-[420px] bottom-0 flex items-center justify-center">
+          <SessionControls
+            startSession={startSession}
+            stopSession={stopSession}
+            sendClientEvent={sendClientEvent}
+            isSessionActive={isSessionActive}
+          />
         </section>
-        <section className="absolute top-0 w-[380px] right-0 bottom-0 p-4 pt-0 overflow-y-auto">
+
+        {/* Right Sidebar for Orders */}
+        <section className="absolute top-0 w-[420px] right-0 bottom-0 p-6 bg-white border-l border-gray-200 shadow-lg overflow-y-auto">
           <ToolPanel
             sendClientEvent={sendClientEvent}
-            sendTextMessage={sendTextMessage}
             events={events}
             isSessionActive={isSessionActive}
           />

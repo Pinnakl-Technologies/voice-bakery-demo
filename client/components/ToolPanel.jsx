@@ -1,28 +1,98 @@
 import { useEffect, useState } from "react";
 
 
-function FunctionCallOutput({ functionCallOutput }) {
-  const { theme, colors } = JSON.parse(functionCallOutput.arguments);
+function OrderSummaryDisplay({ orderData }) {
+  // Add null checks to prevent white screen
+  if (!orderData) {
+    return (
+      <div className="text-red-600 p-3 bg-red-50 rounded-lg border border-red-200">
+        <p className="font-semibold">Error: No order data received</p>
+        <p className="text-sm mt-1">orderData is null or undefined</p>
+      </div>
+    );
+  }
 
-  const colorBoxes = colors.map((color) => (
-    <div
-      key={color}
-      className="w-full h-16 rounded-md flex items-center justify-center border border-gray-200"
-      style={{ backgroundColor: color }}
-    >
-      <p className="text-sm font-bold text-black bg-slate-100 rounded-md p-2 border border-black">
-        {color}
-      </p>
-    </div>
-  ));
+  if (orderData.error) {
+    return (
+      <div className="text-red-600 p-3 bg-red-50 rounded-lg border border-red-200">
+        <p className="font-semibold">Error loading order</p>
+        <p className="text-sm mt-1">{orderData.message || "Unknown error"}</p>
+      </div>
+    );
+  }
+
+  if (!orderData.order_summary) {
+    return (
+      <div className="text-red-600 p-3 bg-red-50 rounded-lg border border-red-200">
+        <p className="font-semibold">Error: Missing order_summary</p>
+        <p className="text-sm mt-1">Received data structure:</p>
+        <pre className="text-xs mt-2 bg-white p-2 rounded overflow-x-auto">
+          {JSON.stringify(orderData, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  const { order_summary, grand_total } = orderData;
 
   return (
-    <div className="flex flex-col gap-2">
-      <p>Theme: {theme}</p>
-      {colorBoxes}
-      <pre className="text-xs bg-gray-100 rounded-md p-2 overflow-x-auto">
-        {JSON.stringify(functionCallOutput, null, 2)}
-      </pre>
+    <div className="flex flex-col gap-3">
+      <h3 className="text-md font-semibold text-gray-700">Order Summary</h3>
+      <div className="space-y-2">
+        {order_summary.map((item, index) => (
+          <div key={index} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="font-medium text-gray-900">{item.item_name}</span>
+              <span className="font-bold text-green-600">{item.item_total}</span>
+            </div>
+            <div className="text-sm text-gray-600 space-y-1">
+              {item.quantity && <div>Quantity: {item.quantity}</div>}
+              {item.weight && <div>Weight: {item.weight} kg</div>}
+              <div className="text-xs text-gray-500">{item.price_per_unit}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 pt-3 border-t-2 border-gray-300">
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-bold text-gray-900">Grand Total:</span>
+          <span className="text-xl font-bold text-green-600">{grand_total}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderConfirmation({ confirmationData }) {
+  // Add null checks to prevent white screen
+  if (!confirmationData || !confirmationData.order_id) {
+    return (
+      <div className="text-red-600 p-3 bg-red-50 rounded-lg border border-red-200">
+        <p className="font-semibold">Error loading order confirmation</p>
+        <p className="text-sm mt-1">Confirmation data is missing or incomplete.</p>
+      </div>
+    );
+  }
+
+  const { order_id, message } = confirmationData;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-lg font-semibold text-green-800">Order Confirmed!</h3>
+        </div>
+        <div className="mt-3 space-y-2">
+          <div className="bg-white rounded p-3 border border-green-200">
+            <span className="text-sm text-gray-600">Order ID: </span>
+            <span className="text-lg font-bold text-gray-900">{order_id}</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -32,19 +102,14 @@ export default function ToolPanel({
   sendClientEvent,
   events,
 }) {
-  const [functionAdded, setFunctionAdded] = useState(false);
-  const [functionCallOutput, setFunctionCallOutput] = useState(null);
+  const [orderSummary, setOrderSummary] = useState(null);
+  const [orderConfirmation, setOrderConfirmation] = useState(null);
   const [processedCallIds] = useState(new Set());
 
   useEffect(() => {
     if (!events || events.length === 0) return;
 
-    const firstEvent = events[events.length - 1];
-    if (!functionAdded && firstEvent.type === "session.created") {
-      setFunctionAdded(true);
-    }
-
-    // Check recent events for tool calls (scanning last 5 to be safe against interleaved events)
+    // Check recent events for tool calls
     const recentEvents = events.slice(0, 5);
 
     recentEvents.forEach(mostRecentEvent => {
@@ -63,33 +128,110 @@ export default function ToolPanel({
             processedCallIds.add(output.call_id);
             console.log("Processing function call:", output.call_id, output.name);
 
-            if (output.name === "display_color_palette") {
-              console.log("Display color palette function call detected:", output);
-              setFunctionCallOutput(output);
+            // Handle make_order - display summary on UI
+            if (output.name === "make_order") {
+              console.log("Make order function call detected:", output);
 
-              // Send the execution result back to OpenAI so it knows the tool finished
-              sendClientEvent({
-                type: "conversation.item.create",
-                item: {
-                  type: "function_call_output",
-                  call_id: output.call_id,
-                  output: JSON.stringify({ success: true }), // Simple acknowledgement
-                },
-              });
+              try {
+                // Call backend to execute the tool
+                const response = await fetch("/execute-tool", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    id: output.id,
+                    name: output.name,
+                    call_id: output.call_id,
+                    arguments: JSON.parse(output.arguments),
+                  }),
+                });
 
-              // Request a new response immediately
-              sendClientEvent({
-                type: "response.create",
-                response: {
-                  instructions: `
-                  ask for feedback about the color palette - don't repeat 
-                  the colors, just ask if they like the colors.
-                `,
-                },
-              });
+                const data = await response.json();
+                console.log("Make order response:", data);
 
-            } else {
+                // Extract the actual order data from the wrapped response
+                const orderData = data.output || data;
+                console.log("Order summary exists?", !!orderData.order_summary);
+                console.log("Extracted order data:", JSON.stringify(orderData, null, 2));
 
+                // Display order summary in UI
+                if (orderData && orderData.order_summary) {
+                  setOrderSummary(orderData);
+                  setOrderConfirmation(null); // Clear any previous confirmation
+                } else {
+                  console.error("Invalid order data structure:", data);
+                  setOrderSummary({
+                    error: true,
+                    message: "Invalid order data received from server"
+                  });
+                }
+
+                // Send the function output back to the model
+                sendClientEvent({
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: output.call_id,
+                    output: JSON.stringify(data),
+                  },
+                });
+
+                // Trigger a response from the model
+                sendClientEvent({ type: "response.create" });
+              } catch (error) {
+                console.error("Error executing make_order:", error);
+              }
+
+            }
+            // Handle place_order - display confirmation on UI
+            else if (output.name === "place_order") {
+              console.log("Place order function call detected:", output);
+
+              try {
+                // Call backend to execute the tool
+                const response = await fetch("/execute-tool", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    id: output.id,
+                    name: output.name,
+                    call_id: output.call_id,
+                    arguments: JSON.parse(output.arguments),
+                  }),
+                });
+
+                const data = await response.json();
+                console.log("Place order response:", data);
+
+                // Extract the actual confirmation data from the wrapped response
+                const confirmationData = data.output || data;
+
+                // Display confirmation in UI
+                setOrderConfirmation(confirmationData);
+                setOrderSummary(null); // Clear summary after placement
+
+                // Send the function output back to the model
+                sendClientEvent({
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: output.call_id,
+                    output: JSON.stringify(confirmationData), // Send the actual confirmation data
+                  },
+                });
+
+                // Trigger a response from the model
+                sendClientEvent({ type: "response.create" });
+              } catch (error) {
+                console.error("Error executing place_order:", error);
+              }
+
+            }
+            // Handle all other tools
+            else {
               try {
                 // Call our backend to execute the tool
                 const response = await fetch("/execute-tool", {
@@ -101,7 +243,7 @@ export default function ToolPanel({
                     id: output.id,
                     name: output.name,
                     call_id: output.call_id,
-                    arguments: JSON.parse(output.arguments), // Passing as object to backend
+                    arguments: JSON.parse(output.arguments),
                   }),
                 });
 
@@ -134,23 +276,27 @@ export default function ToolPanel({
 
   useEffect(() => {
     if (!isSessionActive) {
-      setFunctionAdded(false);
-      setFunctionCallOutput(null);
-      processedCallIds.clear(); // Reset processed IDs on new session
+      setOrderSummary(null);
+      setOrderConfirmation(null);
+      processedCallIds.clear();
     }
   }, [isSessionActive]);
 
   return (
     <section className="h-full w-full flex flex-col gap-4">
-      <div className="h-full bg-gray-50 rounded-md p-4">
-        <h2 className="text-lg font-bold">Color Palette Tool</h2>
+      <div className="h-full bg-gray-50 rounded-md p-4 overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4">Order Management</h2>
         {isSessionActive
           ? (
-            functionCallOutput
-              ? <FunctionCallOutput functionCallOutput={functionCallOutput} />
-              : <p>Ask for advice on a color palette...</p>
+            <div>
+              {orderSummary && <OrderSummaryDisplay orderData={orderSummary} />}
+              {orderConfirmation && <OrderConfirmation confirmationData={orderConfirmation} />}
+              {!orderSummary && !orderConfirmation && (
+                <p className="text-gray-600">Start ordering to see your order details here...</p>
+              )}
+            </div>
           )
-          : <p>Start the session to use this tool...</p>}
+          : <p className="text-gray-600">Start the session to place orders...</p>}
       </div>
     </section>
   );

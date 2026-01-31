@@ -62,30 +62,6 @@ TOOLS = [
     },
     {
         "type": "function",
-        "name": "display_color_palette",
-        "description": "Call this tool immediately when a user asks for colors or a palette. If the user provides a theme (e.g. 'dark'), generate the palette. If the user provides no theme or is vague, DO NOT ask for clarification; instead, infer a creative theme and generate the colors automatically.",
-        "parameters": {
-            "type": "object",
-            "strict": True,
-            "properties": {
-                "theme": {
-                    "type": "string",
-                    "description": "The user-provided or AI-inferred theme name.",
-                },
-                "colors": {
-                    "type": "array",
-                    "description": "A list of 5 hex codes that match the theme.",
-                    "items": {
-                        "type": "string",
-                        "description": "Hex color code",
-                    },
-                },
-            },
-            "required": ["theme", "colors"],
-        },
-    },
-    {
-        "type": "function",
         "name": "make_order",
         "description": "Call this tool to calculate the total cost and provide an order summary. This should be called BEFORE place_order.",
         "parameters": {

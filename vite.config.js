@@ -7,4 +7,10 @@ const path = fileURLToPath(import.meta.url);
 export default {
   root: join(dirname(path), "client"),
   plugins: [react()],
+  server: {
+    proxy: {
+      "/token": "http://localhost:5001",
+      "/session": "http://localhost:5001",
+    },
+  },
 };

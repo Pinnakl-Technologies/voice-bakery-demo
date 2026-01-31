@@ -1,38 +1,93 @@
-# OpenAI Realtime Console
+# OpenAI Realtime Console (Python)
 
-This is an example application showing how to use the [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime) with [WebRTC](https://platform.openai.com/docs/guides/realtime-webrtc).
+This is a **Python (FastAPI)** powered fork of the original [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console). It demonstrates how to use the [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime) with [WebRTC](https://platform.openai.com/docs/guides/realtime-webrtc), but replaces the Node.js/Express backend with a Python FastAPI server.
 
-## Installation and usage
+## Prerequisites
 
-Before you begin, you'll need an OpenAI API key - [create one in the dashboard here](https://platform.openai.com/settings/api-keys). Create a `.env` file from the example file and set your API key in there:
+- [uv](https://docs.astral.sh/uv/) (Fast Python package manager)
+- [Node.js](https://nodejs.org/) (for building the frontend)
+- An OpenAI API key
 
-```bash
-cp .env.example .env
-```
+## Installation
 
-Running this application locally requires [Node.js](https://nodejs.org/) to be installed. Install dependencies for the application with:
+1.  **Clone the repository** (if you haven't already).
 
-```bash
-npm install
-```
+2.  **Set up the Environment Variables**:
+    Create a `.env` file in the root directory and add your OpenAI API key:
 
-Start the application server with:
+    ```bash
+    OPENAI_API_KEY=your_api_key_here
+    PORT=5001
+    ```
 
-```bash
-npm run dev
-```
+3.  **Install Backend Dependencies**:
+    This project uses `uv` for lightning-fast dependency management.
 
-This should start the console application on [http://localhost:3000](http://localhost:3000).
+    ```bash
+    uv sync
+    ```
 
-This application is a minimal template that uses [express](https://expressjs.com/) to serve the React frontend contained in the [`/client`](./client) folder. The server is configured to use [vite](https://vitejs.dev/) to build the React frontend.
+4.  **Install Frontend Dependencies**:
+    ```bash
+    npm install
+    ```
 
-This application shows how to send and receive Realtime API events over the WebRTC data channel and configure client-side function calling. You can also view the JSON payloads for client and server events using the logging panel in the UI.
+## Usage
 
-For a more comprehensive example, see the [OpenAI Realtime Agents](https://github.com/openai/openai-realtime-agents) demo built with Next.js, using an agentic architecture inspired by [OpenAI Swarm](https://github.com/openai/swarm).
+You can run the application in two ways:
 
-## Previous WebSockets version
+### 1. Production Mode (Recommended)
+This serves the optimized, built frontend from the Python server.
 
-The previous version of this application that used WebSockets on the client (not recommended in browsers) [can be found here](https://github.com/openai/openai-realtime-console/tree/websockets).
+1.  **Build the Frontend**:
+    ```bash
+    npm run build
+    ```
+
+2.  **Run the Python Server**:
+    ```bash
+    uv run main.py
+    ```
+
+3.  **Open in Browser**:
+    Navigate to [http://localhost:5001](http://localhost:5001).
+
+### 2. Development Mode
+This runs the Vite development server for the frontend (with hot reloading) and the Python server for the backend.
+
+1.  **Run the Python Server** (in one terminal):
+    ```bash
+    uv run main.py
+    ```
+
+2.  **Run the Vite Dev Server** (in another terminal):
+    ```bash
+    npm run dev
+    ```
+
+3.  **Open in Browser**:
+    Navigate to the URL shown by Vite (usually [http://localhost:5173](http://localhost:5173)).
+    *Note: The vite config is set up to proxy `/token` and `/session` requests to the Python backend on port 5001.*
+
+## Project Structure
+
+- **`main.py`**: FastAPI backend server. Handles token generation using `OPENAI_API_KEY` and serves the static frontend files.
+- **`client/`**: React frontend source code.
+    - **`client/entry-client.jsx`**: Main React entry point.
+- **`dist/`**: Compiled frontend assets (generated after `npm run build`).
+
+## Changelog
+
+### feat
+- Implement Python FastAPI backend for OpenAI Realtime API interactions and static file serving.
+- Implement tool definition and execution in backend side
+
+### chore
+- Move react-router-dom to devDependencies
+
+### fix
+- hydrateRoot to createRoot
+- Fix stalled OpenAI responses by preventing duplicate tool executions in ToolPanel.jsx
 
 ## License
 

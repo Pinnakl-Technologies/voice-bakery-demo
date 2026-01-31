@@ -1,0 +1,14 @@
+[project]
+name = "openai-realtime-console-py"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12,<=3.13"
+dependencies = ["fastapi[standard]>=0.128.0", "uvicorn[standard]>=0.40.0"]
+
+
+[project.scripts]
+app = "main:app"
+
+[tool.vercel.scripts]
+build = "npm install && npm run build"

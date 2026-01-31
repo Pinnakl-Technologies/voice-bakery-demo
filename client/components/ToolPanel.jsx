@@ -1,42 +1,5 @@
 import { useEffect, useState } from "react";
 
-const functionDescription = `
-Call this function when a user asks for a color palette.
-`;
-
-const sessionUpdate = {
-  type: "session.update",
-  session: {
-    type: "realtime",
-    tools: [
-      {
-        type: "function",
-        name: "display_color_palette",
-        description: functionDescription,
-        parameters: {
-          type: "object",
-          strict: true,
-          properties: {
-            theme: {
-              type: "string",
-              description: "Description of the theme for the color scheme.",
-            },
-            colors: {
-              type: "array",
-              description: "Array of five hex color codes based on the theme.",
-              items: {
-                type: "string",
-                description: "Hex color code",
-              },
-            },
-          },
-          required: ["theme", "colors"],
-        },
-      },
-    ],
-    tool_choice: "auto",
-  },
-};
 
 function FunctionCallOutput({ functionCallOutput }) {
   const { theme, colors } = JSON.parse(functionCallOutput.arguments);
@@ -71,47 +34,109 @@ export default function ToolPanel({
 }) {
   const [functionAdded, setFunctionAdded] = useState(false);
   const [functionCallOutput, setFunctionCallOutput] = useState(null);
+  const [processedCallIds] = useState(new Set());
 
   useEffect(() => {
     if (!events || events.length === 0) return;
 
     const firstEvent = events[events.length - 1];
     if (!functionAdded && firstEvent.type === "session.created") {
-      sendClientEvent(sessionUpdate);
       setFunctionAdded(true);
     }
 
-    const mostRecentEvent = events[0];
-    if (
-      mostRecentEvent.type === "response.done" &&
-      mostRecentEvent.response.output
-    ) {
-      mostRecentEvent.response.output.forEach((output) => {
-        if (
-          output.type === "function_call" &&
-          output.name === "display_color_palette"
-        ) {
-          setFunctionCallOutput(output);
-          setTimeout(() => {
-            sendClientEvent({
-              type: "response.create",
-              response: {
-                instructions: `
-                ask for feedback about the color palette - don't repeat 
-                the colors, just ask if they like the colors.
-              `,
-              },
-            });
-          }, 500);
-        }
-      });
-    }
+    // Check recent events for tool calls (scanning last 5 to be safe against interleaved events)
+    const recentEvents = events.slice(0, 5);
+
+    recentEvents.forEach(mostRecentEvent => {
+      if (
+        mostRecentEvent.type === "response.done" &&
+        mostRecentEvent.response.output
+      ) {
+        mostRecentEvent.response.output.forEach(async (output) => {
+          if (output.type === "function_call") {
+            // Prevent duplicate processing
+            if (processedCallIds.has(output.call_id)) {
+              return;
+            }
+
+            // Mark as processed immediately
+            processedCallIds.add(output.call_id);
+            console.log("Processing function call:", output.call_id, output.name);
+
+            if (output.name === "display_color_palette") {
+              console.log("Display color palette function call detected:", output);
+              setFunctionCallOutput(output);
+
+              // Send the execution result back to OpenAI so it knows the tool finished
+              sendClientEvent({
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  call_id: output.call_id,
+                  output: JSON.stringify({ success: true }), // Simple acknowledgement
+                },
+              });
+
+              // Request a new response immediately
+              sendClientEvent({
+                type: "response.create",
+                response: {
+                  instructions: `
+                  ask for feedback about the color palette - don't repeat 
+                  the colors, just ask if they like the colors.
+                `,
+                },
+              });
+
+            } else {
+
+              try {
+                // Call our backend to execute the tool
+                const response = await fetch("/execute-tool", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    id: output.id,
+                    name: output.name,
+                    call_id: output.call_id,
+                    arguments: JSON.parse(output.arguments), // Passing as object to backend
+                  }),
+                });
+
+                const data = await response.json();
+                console.log("Backend response:", data);
+
+                // Send the function output back to the model
+                sendClientEvent({
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: output.call_id,
+                    output: JSON.stringify(data),
+                  },
+                });
+
+                // Trigger a response from the model
+                sendClientEvent({ type: "response.create" });
+              } catch (error) {
+                console.error("Error executing tool:", error);
+              }
+            }
+
+          }
+        });
+      }
+    });
+
   }, [events]);
 
   useEffect(() => {
     if (!isSessionActive) {
       setFunctionAdded(false);
       setFunctionCallOutput(null);
+      processedCallIds.clear(); // Reset processed IDs on new session
     }
   }, [isSessionActive]);
 

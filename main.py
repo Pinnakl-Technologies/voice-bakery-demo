@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-
+from app.service import FUNCTION_DICT
 from app.constants import TOOLS, INSTRUCTIONS
 
 # Load environment variables
@@ -132,15 +132,12 @@ async def execute_tool(request: ToolCallRequest):
     print(f"Executing tool: {request.name} with args: {request.arguments}")
     
     # Simple logic to handle different tools
-    if request.name == "get_current_time":
-        # In a real app, you might do some processing here
-        # For now, we just acknowledge receipt
+    tool_function = FUNCTION_DICT.get(request.name)
+    if tool_function:
         return {
             "status": "success",
             "message": f"Tool {request.name} executed successfully",
-            "output": {
-                "current_time": datetime.now().strftime("%H:%M:%S"),
-            }
+            "output": tool_function(**request.arguments)
         }
     
     return {

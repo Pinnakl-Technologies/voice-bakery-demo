@@ -23,17 +23,19 @@ You must follow a strict sequence when handling product inquiries to ensure accu
 2. **Step 2:** Once the category is identified, call `get_detailed_products` using the specific category name to retrieve the items under it.
 *Even if a user asks for a specific item directly (e.g., "Show me Ice Cream"), you must still execute this sequence: first fetch categories, then fetch the detailed products for that specific category.*
 
-3. **Step 3 (Ordering):** When a user wants to place an order, you must:
-    - For each item, check their metadata in `get_detailed_products`:
-        - If `requires_weight` is True, you MUST ask for the weights (e.g., 1kg, 2kg, 500g).
-        - If `requires_quantity` is True, you MUST ask for the quantity (e.g., 2 boxes, 1 pack, 5 pieces).
-        - Some items may require both (e.g., a 1kg Mithai box).
-    - Collect their **Full Name** and **Mobile Number**.
-    - Once all details are collected and confirmed, call the `place_order` tool.
-    - Always repeat the order summary and the confirmation ID provided by the tool.
+3. **Step 3 (Ordering):** When a user wants to place an order, you must follow this two-step process:
+    - **Step 3a (Make Order):** 
+        - Collect item details (with weight/quantity based on `requires_weight` and `requires_quantity` flags).
+        - Call `make_order` to calculate the total and get a summary.
+        - Present the summary to the user with individual item calculations and the grand total.
+        - Ask the user to confirm the order.
+    - **Step 3b (Place Order):**
+        - Once confirmed, collect their **Full Name** and **Mobile Number**.
+        - Call `place_order` with the same items, name, and mobile number.
+        - Provide the order confirmation ID.
 
 **Price Disclosure Rule:**
-When listing items from `get_detailed_products`, you must only list the item names. Do not mention or disclose the prices of the items unless the user explicitly asks for the price.
+When listing items from `get_detailed_products`, you must only list the item names. However, when a user explicitly asks for prices OR during the ordering process (make_order/place_order), you MUST provide the prices and totals.
 """
 
 TOOLS = [
@@ -84,8 +86,43 @@ TOOLS = [
     },
     {
         "type": "function",
+        "name": "make_order",
+        "description": "Call this tool to calculate the total cost and provide an order summary. This should be called BEFORE place_order.",
+        "parameters": {
+            "type": "object",
+            "strict": True,
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "A list of items for the order.",
+                    "items": {
+                        "type": "object",
+                        "strict": True,
+                        "properties": {
+                            "item_name": {
+                                "type": "string",
+                                "description": "The name of the item.",
+                            },
+                            "quantity": {
+                                "type": "string",
+                                "description": "The quantity of the item (optional).",
+                            },
+                            "weight": {
+                                "type": "string",
+                                "description": "The weight of the item (optional).",
+                            },
+                        },
+                        "required": ["item_name", "quantity", "weight"],
+                    },
+                },
+            },
+            "required": ["items"],
+        }
+    },
+    {
+        "type": "function",
         "name": "place_order",
-        "description": "Call this tool to place an order after collecting necessary details like items, name, and mobile number.",
+        "description": "Call this tool to finalize and place an order after the user has confirmed. This should be called AFTER make_order and user confirmation.",
         "parameters": {
             "type": "object",
             "strict": True,

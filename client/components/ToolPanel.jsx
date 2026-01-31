@@ -104,6 +104,7 @@ export default function ToolPanel({
 }) {
   const [orderSummary, setOrderSummary] = useState(null);
   const [orderConfirmation, setOrderConfirmation] = useState(null);
+  const [accumulatedItems, setAccumulatedItems] = useState([]); // Track all items in current order
   const [processedCallIds] = useState(new Set());
 
   useEffect(() => {
@@ -133,7 +134,18 @@ export default function ToolPanel({
               console.log("Make order function call detected:", output);
 
               try {
-                // Call backend to execute the tool
+                // Parse the arguments to get the new items
+                const newItems = JSON.parse(output.arguments).items || [];
+                console.log("New items from AI:", newItems);
+
+                // Merge with accumulated items
+                const mergedItems = [...accumulatedItems, ...newItems];
+                console.log("Merged items (accumulated + new):", mergedItems);
+
+                // Update accumulated items state
+                setAccumulatedItems(mergedItems);
+
+                // Call backend to execute the tool with ALL accumulated items
                 const response = await fetch("/execute-tool", {
                   method: "POST",
                   headers: {
@@ -143,7 +155,7 @@ export default function ToolPanel({
                     id: output.id,
                     name: output.name,
                     call_id: output.call_id,
-                    arguments: JSON.parse(output.arguments),
+                    arguments: { items: mergedItems }, // Send all accumulated items
                   }),
                 });
 
@@ -173,7 +185,7 @@ export default function ToolPanel({
                   item: {
                     type: "function_call_output",
                     call_id: output.call_id,
-                    output: JSON.stringify(data),
+                    output: JSON.stringify(orderData), // Send the actual order data
                   },
                 });
 
@@ -212,6 +224,7 @@ export default function ToolPanel({
                 // Display confirmation in UI
                 setOrderConfirmation(confirmationData);
                 setOrderSummary(null); // Clear summary after placement
+                setAccumulatedItems([]); // Clear accumulated items after successful order
 
                 // Send the function output back to the model
                 sendClientEvent({
@@ -282,18 +295,44 @@ export default function ToolPanel({
     }
   }, [isSessionActive]);
 
+  // Function to clear the current order
+  const handleClearOrder = () => {
+    setAccumulatedItems([]);
+    setOrderSummary(null);
+    setOrderConfirmation(null);
+  };
+
   return (
     <section className="h-full w-full flex flex-col gap-4">
       <div className="h-full bg-gray-50 rounded-md p-4 overflow-y-auto">
-        <h2 className="text-lg font-bold mb-4">Order Management</h2>
         {isSessionActive
           ? (
-            <div>
-              {orderSummary && <OrderSummaryDisplay orderData={orderSummary} />}
-              {orderConfirmation && <OrderConfirmation confirmationData={orderConfirmation} />}
-              {!orderSummary && !orderConfirmation && (
-                <p className="text-gray-600">Start ordering to see your order details here...</p>
-              )}
+            <div className="flex flex-col h-full">
+              <div className="sticky top-0 bg-gray-50 z-10 pb-4 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Order Management</h2>
+                {accumulatedItems.length > 0 && (
+                  <button
+                    onClick={handleClearOrder}
+                    className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear Order ({accumulatedItems.length} item{accumulatedItems.length !== 1 ? 's' : ''})
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto pt-4">
+                {orderSummary && <OrderSummaryDisplay orderData={orderSummary} />}
+                {orderConfirmation && <OrderConfirmation confirmationData={orderConfirmation} />}
+                {!orderSummary && !orderConfirmation && (
+                  <div className="text-center text-gray-500 mt-8">
+                    <p>No active orders</p>
+                    <p className="text-sm mt-2">Start speaking to place an order</p>
+                  </div>
+                )}
+              </div>
             </div>
           )
           : <p className="text-gray-600">Start the session to place orders...</p>}

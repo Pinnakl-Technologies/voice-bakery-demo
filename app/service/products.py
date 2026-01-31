@@ -30,6 +30,17 @@ def place_order(customer_name: str, mobile_number: str, items: list[dict]):
         "instruction": "Inform the user that their order has been placed successfully and provide the order ID. Maintain a warm and grateful tone."
     }
 
+def end_call():
+    """
+    End the call gracefully. This should be called when the user wants to end the conversation.
+    """
+    return {
+        "status": "success",
+        "message": "Allah Hafiz! Thank you for calling Rehmat-e-Shereen. Have a blessed day!",
+        "instruction": "Say a warm goodbye in Urdu (Allah Hafiz) and thank them for calling. After this response, the call will automatically end.",
+        "action": "end_session"
+    }
+
 def make_order(items: list[dict]):
     """
     Calculate the total cost for the order and provide a summary.

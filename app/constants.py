@@ -140,4 +140,9 @@ TOOLS = [
             "required": ["customer_name", "mobile_number", "items"],
         }
     },
+    {
+        "type": "function",
+        "name": "end_call",
+        "description": "Call this tool when the user wants to end the conversation or says goodbye (e.g., Allah Hafiz, bye, thank you and goodbye). This will gracefully end the session after you give a final goodbye message.",
+    },
 ]

@@ -105,6 +105,7 @@ export default function ToolPanel({
   const [orderSummary, setOrderSummary] = useState(null);
   const [orderConfirmation, setOrderConfirmation] = useState(null);
   const [accumulatedItems, setAccumulatedItems] = useState([]); // Track all items in current order
+  const [shouldEndSession, setShouldEndSession] = useState(false); // Track if session should end after AI response
   const [processedCallIds] = useState(new Set());
 
   useEffect(() => {
@@ -114,6 +115,20 @@ export default function ToolPanel({
     const recentEvents = events.slice(0, 5);
 
     recentEvents.forEach(mostRecentEvent => {
+      // Check if AI has finished responding and we should end the session
+      if (mostRecentEvent.type === "output_audio_buffer.stopped" && shouldEndSession) {
+        console.log("AI response completed, ending session now...");
+        setShouldEndSession(false); // Reset flag
+
+        // Find the App component's stopSession function via props
+        // We'll need to pass it down from App
+        const stopButton = document.querySelector('button[class*="bg-red"]');
+        if (stopButton && stopButton.textContent.includes('End Session')) {
+          stopButton.click();
+        }
+        return;
+      }
+
       if (
         mostRecentEvent.type === "response.done" &&
         mostRecentEvent.response.output
@@ -241,7 +256,48 @@ export default function ToolPanel({
               } catch (error) {
                 console.error("Error executing place_order:", error);
               }
+            }
+            // Handle end_call - gracefully end the session
+            else if (output.name === "end_call") {
+              console.log("End call function detected:", output);
 
+              try {
+                // Call backend to execute the tool
+                const response = await fetch("/execute-tool", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    id: output.id,
+                    name: output.name,
+                    call_id: output.call_id,
+                    arguments: {},
+                  }),
+                });
+
+                const data = await response.json();
+                console.log("End call response:", data);
+
+                // Send the function output back to the model
+                sendClientEvent({
+                  type: "conversation.item.create",
+                  item: {
+                    type: "function_call_output",
+                    call_id: output.call_id,
+                    output: JSON.stringify(data),
+                  },
+                });
+
+                // Trigger final response from the model
+                sendClientEvent({ type: "response.create" });
+
+                // Set flag to end session after AI finishes speaking
+                setShouldEndSession(true);
+                console.log("Set shouldEndSession flag - will end after AI responds");
+              } catch (error) {
+                console.error("Error executing end_call:", error);
+              }
             }
             // Handle all other tools
             else {

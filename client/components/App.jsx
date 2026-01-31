@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import customLogo from "/assets/logo.png";
+import backgroundImage from "/assets/background.webp";
 import SessionControls from "./SessionControls";
 import ToolPanel from "./ToolPanel";
 
@@ -141,39 +142,53 @@ export default function App() {
   }, [dataChannel]);
 
   return (
-    <>
-      {/* Header with Logo */}
-      <nav className="absolute top-0 left-0 right-0 h-20 flex items-center justify-center bg-gradient-to-r from-green-50 to-blue-50 border-b border-gray-200">
-        <div className="flex items-center gap-4">
-          <img src={customLogo} alt="Rehmat-e-Shereen" className="h-16 w-16 object-contain" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Rehmat-e-Shereen</h1>
-            <p className="text-sm text-gray-600">Voice Bakery Ordering System</p>
+    <div
+      className="relative min-h-screen w-screen bg-cover bg-center bg-no-repeat overflow-hidden flex flex-col font-sans"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    >
+      {/* Dynamic Overlay for Depth */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-0"></div>
+
+      {/* Glassmorphism Header */}
+      <nav className="relative z-30 h-20 flex items-center justify-center bg-white/10 backdrop-blur-md border-b border-white/10 shadow-xl px-8">
+        <div className="flex items-center gap-6">
+          <div className="p-1 bg-white/20 rounded-xl backdrop-blur-sm border border-white/30 shadow-inner">
+            <img src={customLogo} alt="Rehmat-e-Shereen" className="h-14 w-14 object-contain" />
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white drop-shadow-lg">
+              Rehmat-e-Shereen
+            </h1>
+            <p className="text-sm font-medium text-blue-100/80 tracking-widest uppercase opacity-90">
+              Premium Voice Bakery
+            </p>
           </div>
         </div>
       </nav>
 
-      <main className="absolute top-20 left-0 right-0 bottom-0 bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Main Content Area */}
-        <section className="absolute top-0 left-0 right-[420px] bottom-0 flex items-center justify-center">
-          <SessionControls
-            startSession={startSession}
-            stopSession={stopSession}
-            sendClientEvent={sendClientEvent}
-            isSessionActive={isSessionActive}
-          />
+      <main className="relative z-10 flex-1 flex overflow-hidden">
+        {/* Main Interaction Area */}
+        <section className="flex-1 flex items-center justify-center p-8">
+          <div className="relative z-10 w-full max-w-4xl aspect-video flex items-center justify-center">
+            <SessionControls
+              startSession={startSession}
+              stopSession={stopSession}
+              sendClientEvent={sendClientEvent}
+              isSessionActive={isSessionActive}
+            />
+          </div>
         </section>
 
-        {/* Right Sidebar for Orders */}
-        <section className="absolute top-0 w-[420px] right-0 bottom-0 p-6 bg-white border-l border-gray-200 shadow-lg overflow-y-auto">
+        {/* Premium Glass Sidebar */}
+        <aside className="relative z-40 w-[420px] bg-white/10 backdrop-blur-2xl border-l border-white/10 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden">
           <ToolPanel
             sendClientEvent={sendClientEvent}
             events={events}
             isSessionActive={isSessionActive}
             stopSession={stopSession}
           />
-        </section>
+        </aside>
       </main>
-    </>
+    </div>
   );
 }

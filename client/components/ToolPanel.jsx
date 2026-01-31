@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Mic } from "react-feather";
 
 
 function OrderSummaryDisplay({ orderData }) {
@@ -36,27 +37,30 @@ function OrderSummaryDisplay({ orderData }) {
   const { order_summary, grand_total } = orderData;
 
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="text-md font-semibold text-gray-700">Order Summary</h3>
-      <div className="space-y-2">
+    <div className="flex flex-col gap-4">
+      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <span className="w-1 h-5 bg-blue-400 rounded-full"></span>
+        Order Summary
+      </h3>
+      <div className="space-y-3">
         {order_summary.map((item, index) => (
-          <div key={index} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+          <div key={index} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg hover:bg-white/15 transition-all">
             <div className="flex justify-between items-start mb-2">
-              <span className="font-medium text-gray-900">{item.item_name}</span>
-              <span className="font-bold text-green-600">{item.item_total}</span>
+              <span className="font-bold text-white">{item.item_name}</span>
+              <span className="font-black text-blue-400 text-lg drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">{item.item_total}</span>
             </div>
-            <div className="text-sm text-gray-600 space-y-1">
-              {item.quantity && <div>Quantity: {item.quantity}</div>}
-              {item.weight && <div>Weight: {item.weight} kg</div>}
-              <div className="text-xs text-gray-500">{item.price_per_unit}</div>
+            <div className="text-sm text-white/60 space-y-1 font-medium">
+              {item.quantity && <div>Quantity: <span className="text-white">{item.quantity}</span></div>}
+              {item.weight && <div>Weight: <span className="text-white">{item.weight} kg</span></div>}
+              <div className="text-xs text-white/40 mt-1">{item.price_per_unit}</div>
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-2 pt-3 border-t-2 border-gray-300">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">Grand Total:</span>
-          <span className="text-xl font-bold text-green-600">{grand_total}</span>
+      <div className="mt-4 pt-4 border-t border-white/10">
+        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
+          <span className="text-xl font-bold text-white/90">Grand Total</span>
+          <span className="text-2xl font-black text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.6)]">{grand_total}</span>
         </div>
       </div>
     </div>
@@ -78,19 +82,22 @@ function OrderConfirmation({ confirmationData }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-lg font-semibold text-green-800">Order Confirmed!</h3>
-        </div>
-        <div className="mt-3 space-y-2">
-          <div className="bg-white rounded p-3 border border-green-200">
-            <span className="text-sm text-gray-600">Order ID: </span>
-            <span className="text-lg font-bold text-gray-900">{order_id}</span>
+      <div className="bg-green-500/10 border border-green-500/20 backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-green-500/20 rounded-xl">
+            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          <p className="text-sm text-gray-700 leading-relaxed">{message}</p>
+          <h3 className="text-xl font-black text-white">Order Confirmed</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex justify-between items-center">
+            <span className="text-sm font-bold text-white/50 uppercase tracking-widest">Order ID</span>
+            <span className="text-lg font-black text-white tracking-widest bg-white/10 px-3 py-1 rounded-lg border border-white/10">{order_id}</span>
+          </div>
+          <p className="text-md text-white/70 leading-relaxed font-medium bg-white/5 p-4 rounded-2xl border border-white/5">{message}</p>
         </div>
       </div>
     </div>
@@ -397,39 +404,57 @@ export default function ToolPanel({
   };
 
   return (
-    <section className="h-full w-full flex flex-col gap-4">
-      <div className="h-full bg-gray-50 rounded-md p-4 overflow-y-auto">
+    <section className="h-full w-full flex flex-col overflow-hidden">
+      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
         {isSessionActive
           ? (
-            <div className="flex flex-col h-full">
-              <div className="sticky top-0 bg-gray-50 z-10 pb-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Order Management</h2>
+            <div className="flex flex-col h-full gap-6">
+              <div className="sticky top-0 bg-white/5 backdrop-blur-xl z-20 pb-4 border-b border-white/10">
+                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                  <span className="w-1.5 h-8 bg-blue-500 rounded-full"></span>
+                  Order Management
+                </h2>
                 {accumulatedItems.length > 0 && (
                   <button
                     onClick={handleClearOrder}
-                    className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-red-500/80 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg backdrop-blur-md border border-white/10 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    Clear Order ({accumulatedItems.length} item{accumulatedItems.length !== 1 ? 's' : ''})
+                    Clear Order ({accumulatedItems.length})
                   </button>
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto pt-4">
+              <div className="flex-1 space-y-6 pt-2">
                 {orderSummary && <OrderSummaryDisplay orderData={orderSummary} />}
                 {orderConfirmation && <OrderConfirmation confirmationData={orderConfirmation} />}
                 {!orderSummary && !orderConfirmation && (
-                  <div className="text-center text-gray-500 mt-8">
-                    <p>No active orders</p>
-                    <p className="text-sm mt-2">Start speaking to place an order</p>
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
+                      <svg className="w-10 h-10 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    </div>
+                    <p className="text-lg font-semibold text-white/80">Your basket is empty</p>
+                    <p className="text-sm text-white/40 mt-2 px-8">Tell "Rehmat-e-Shereen" what you'd like to taste today!</p>
                   </div>
                 )}
               </div>
             </div>
           )
-          : <p className="text-gray-600">Start the session to place orders...</p>}
+          : (
+            <div className="flex flex-col items-center justify-center h-full text-center px-10">
+              <div className="w-24 h-24 bg-white/5 rounded-3xl backdrop-blur-lg flex items-center justify-center mb-8 border border-white/20 rotate-12 shadow-2xl">
+                <Mic size={48} className="text-white/20 -rotate-12" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Ready to Order?</h3>
+              <p className="text-white/60 leading-relaxed font-medium">
+                Start the session to see your order summary, prices, and confirmations in real-time.
+              </p>
+            </div>
+          )}
       </div>
     </section>
   );

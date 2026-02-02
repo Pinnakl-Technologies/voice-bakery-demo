@@ -3,20 +3,41 @@ from app.service.db import CATEGORIES, PRODUCTS
 
 def get_product_categories():
     return {
-        "instruction": "List the names of the categories only. Do not provide descriptions unless specifically asked.",
+        "instruction": "You have the full category list now. DON'T list all of them. Based on what the customer said they need, suggest only 2-3 RELEVANT categories conversationally. Ask which one interests them. Example: 'ہمارے پاس کلاسک مٹھائیاں، حلوے، آئس کریم ہیں۔ آپ کو کیا پسند ہے؟'",
         "categories": CATEGORIES
     }
 
+
+
 def get_detailed_products(category: str):
-    for i in PRODUCTS:
-        if i["category"].lower() == category.lower():
+    """
+    Get products for a category. Handles both English and Urdu category names.
+    """
+    category_lower = category.lower().strip()
+    
+    for product_group in PRODUCTS:
+        # Check both the main category name and the Urdu name
+        cat_name = product_group.get("category", "").lower()
+        cat_urdu = product_group.get("category_urdu", "")
+        
+        # Match if either English or Urdu name matches
+        if (category_lower == cat_name or 
+            category == cat_urdu or 
+            category_lower in cat_name or
+            cat_name in category_lower):
+            
             return {
-                "instruction": "List the items available in this category. Keep the response brief. Do not tell the prices unless the user asks.",
-                "items": i["items"]
+                "instruction": "You now have the full product list for this category. DON'T read all of them. Pick 2-4 POPULAR or RELEVANT items and mention them as suggestions. Frame it naturally: 'اس میں گلاب جامن، بارفی، لڈو جیسی چیزیں ہیں۔ کیا ان میں سے کچھ پسند ہے؟' Let the customer ask if they want to hear more options.",
+                "category": product_group.get("category"),
+                "category_urdu": cat_urdu,
+                "items": product_group["items"]
             }
+    
     return {
         "error": f"Items under the category '{category}' are not available."
     }
+
+
 
 def place_order(customer_name: str, mobile_number: str, items: list[dict]):
     """

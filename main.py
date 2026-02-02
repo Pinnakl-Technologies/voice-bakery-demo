@@ -39,7 +39,7 @@ PORT = int(os.getenv("PORT", 5001))
 session_config = {
     "session": {
         "type": "realtime",
-        "model": "gpt-realtime-mini",
+        "model": "gpt-4o-realtime-preview",
         "instructions": INSTRUCTIONS,
         "audio": {
             "output": {
